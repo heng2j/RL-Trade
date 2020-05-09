@@ -8,7 +8,7 @@ from matplotlib import style
 
 # finance module is no longer part of matplotlib
 # see: https://github.com/matplotlib/mpl_finance
-from mpl_finance import candlestick_ochl as candlestick
+from mplfinance.original_flavor import candlestick_ochl as candlestick
 
 style.use('dark_background')
 

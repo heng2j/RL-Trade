@@ -13,7 +13,7 @@ MAX_SHARE_PRICE = 5000
 MAX_OPEN_POSITIONS = 5
 MAX_STEPS = 20000
 
-INITIAL_ACCOUNT_BALANCE = 10000
+INITIAL_ACCOUNT_BALANCE = 1000
 
 LOOKBACK_WINDOW_SIZE = 40
 
@@ -36,6 +36,8 @@ class StockTradingEnv(gym.Env):
         # Actions of the format Buy x%, Sell x%, Hold, etc.
         self.action_space = spaces.Box(
             low=np.array([0, 0]), high=np.array([3, 1]), dtype=np.float16)
+
+        print("self.action_space: !!!", self.action_space.shape)
 
         # Prices contains the OHCL values for the last five prices
         self.observation_space = spaces.Box(
@@ -82,6 +84,8 @@ class StockTradingEnv(gym.Env):
     def _take_action(self, action):
         current_price = random.uniform(
             self.df.loc[self.current_step, "Open"], self.df.loc[self.current_step, "Close"])
+        
+        print("action: ", action)
 
         action_type = action[0]
         amount = action[1]
@@ -125,6 +129,7 @@ class StockTradingEnv(gym.Env):
             self.cost_basis = 0
 
     def step(self, action):
+
         # Execute one time step within the environment
         self._take_action(action)
 
