@@ -156,13 +156,16 @@ class DQN:
 df = pd.read_csv('./data/MSFT.csv')
 df = df.sort_values('Date')
 
-replay_size = 5
-trials  = 2
-Domain_Randomization_Interval = trial_len = 100
+replay_size = 10
+trials  = 5
+trial_len = 100
+Domain_Randomization_Interval = 100
+# filename = 'base_line_render.txt'
+filename = 'UDR_render.txt'
 
 
 # The algorithms require a vectorized environment to run
-env = DummyVecEnv([lambda: StockTradingEnv(df, render_mode='file', replay_size=replay_size, Domain_Randomization_Interval=Domain_Randomization_Interval) ])
+env = DummyVecEnv([lambda: StockTradingEnv(df, render_mode='file', filename=filename, replay_size=replay_size, Domain_Randomization_Interval=Domain_Randomization_Interval) ])
 
 obs = env.reset()
 
@@ -205,7 +208,10 @@ for trial in range(trials):
         if done:
             break
 
-    print("Completed trial #{} ".format(trial))
-    # dqn_agent.render_all_modes(env)
-    dqn_agent.save_model("model_{}.model".format(trial))
+print("Completed trial #{} ".format(trial))
+# dqn_agent.render_all_modes(env)
+# model_code = 'baseline_{0}_iterations_{1}_steps_each'.format(trials,Domain_Randomization_Interval)
+model_code = 'UDR_{0}_iterations_{1}_steps_each'.format(trials,Domain_Randomization_Interval)
+
+dqn_agent.save_model("model_{}.model".format(model_code))
         

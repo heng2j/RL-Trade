@@ -148,6 +148,11 @@ class DQN:
 
 
 model_path = './model_1.model'
+model_path = './model_baseline_5_iterations_None_steps_each.model'
+model_path = './model_UDR_5_iterations_100_steps_each.model'
+
+
+
 
 
 

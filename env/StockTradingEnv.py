@@ -46,6 +46,8 @@ class StockTradingEnv(gym.Env):
         self.Domain_Randomization_Interval = Domain_Randomization_Interval
 
 
+        self.current_step = 0
+
         self.reward_range = (0, MAX_ACCOUNT_BALANCE)
 
         # Actions of the format Buy x%, Sell x%, Hold, etc.
@@ -169,7 +171,7 @@ class StockTradingEnv(gym.Env):
         self.cost_basis = 0
         self.total_shares_sold = 0
         self.total_sales_value = 0
-        self.current_step = 0
+        # self.current_step = 0 # By Default sequential 
         self.trades = []
 
         if self.Domain_Randomization_Interval != None:
