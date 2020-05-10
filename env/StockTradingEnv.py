@@ -15,6 +15,7 @@ MAX_OPEN_POSITIONS = 5
 MAX_STEPS = 20000
 
 INITIAL_ACCOUNT_BALANCE = 1000
+INFLATION_RATE = (0.015 / 360)
 
 LOOKBACK_WINDOW_SIZE = 40
 
@@ -28,12 +29,15 @@ class StockTradingEnv(gym.Env):
     metadata = {'render.modes': ['live', 'file', 'none']}
     visualization = None
 
-    def __init__(self, df, render_mode='file', filename='render.txt',  Domain_Randomization_Interval=None, replay_size=5):
+    def __init__(self, df, render_mode='file', filename='render.txt', trial_len=100,  Domain_Randomization_Interval=None, replay_size=5):
         super(StockTradingEnv, self).__init__()
 
         self.df = self._adjust_prices(df)
         self.render_mode = render_mode
         self.filename = filename
+        self.trial_len = trial_len
+        self.cur_trial_step = 0
+        self.profit = 0 
 
         if self.render_mode == 'file':
             # Check if file already exit, if so delete it
@@ -103,6 +107,7 @@ class StockTradingEnv(gym.Env):
             self.df.loc[self.current_step, "Open"], self.df.loc[self.current_step, "Close"])
         
         print("action: ", action)
+        print("Before balance: ", self.balance)
 
         action_type = action[0]
         amount = action[1]
@@ -123,6 +128,9 @@ class StockTradingEnv(gym.Env):
                 self.trades.append({'step': self.current_step,
                                     'shares': shares_bought, 'total': additional_cost,
                                     'type': "buy"})
+                print({'step': self.current_step,
+                                    'shares': shares_bought, 'total': additional_cost,
+                                    'type': "buy"})
 
         elif action_type < 2:
             # Sell amount % of shares held
@@ -136,6 +144,9 @@ class StockTradingEnv(gym.Env):
                 self.trades.append({'step': self.current_step,
                                     'shares': shares_sold, 'total': shares_sold * current_price,
                                     'type': "sell"})
+                print({'step': self.current_step,
+                                    'shares': shares_sold, 'total': shares_sold * current_price,
+                                    'type': "sell"})
 
         self.net_worth = self.balance + self.shares_held * current_price
 
@@ -145,16 +156,32 @@ class StockTradingEnv(gym.Env):
         if self.shares_held == 0:
             self.cost_basis = 0
 
+        self.profit = self.net_worth - INITIAL_ACCOUNT_BALANCE
+        print("after balance: ",  self.balance)
+
     def step(self, action):
 
         # Execute one time step within the environment
         self._take_action(action)
 
         self.current_step += 1
+        self.cur_trial_step  += 1
 
-        delay_modifier = (self.current_step / MAX_STEPS)
+        # TODO update delay_modifer to consider the subset window only
+        # delay_modifier = (self.current_step / MAX_STEPS)
+        delay_modifier = (self.cur_trial_step / MAX_STEPS)
 
-        reward = self.balance * delay_modifier + self.current_step
+        # TODO - Update reward System
+        # reward = self.balance * delay_modifier + self.current_step
+        reward = self.balance * delay_modifier + self.profit  - ( self.cur_trial_step * (self.balance * INFLATION_RATE)) 
+        print("delay_modifier: ", delay_modifier)
+        print("Step balance: ", self.balance)
+        print("Step profit :", self.profit  )
+
+
+        print("Step function reward: ", reward)
+
+
         done = self.net_worth <= 0 or self.current_step >= len(
             self.df.loc[:, 'Open'].values)
 
@@ -171,6 +198,7 @@ class StockTradingEnv(gym.Env):
         self.cost_basis = 0
         self.total_shares_sold = 0
         self.total_sales_value = 0
+        self.cur_trial_step = 0
         # self.current_step = 0 # By Default sequential 
         self.trades = []
 
