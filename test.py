@@ -1,3 +1,4 @@
+
 # Reference Code 
 # https://gist.github.com/arsalanaf/d10e0c9e2422dba94c91e478831acb12
 # https://github.com/Stable-Baselines-Team/stable-baselines-tf2
@@ -26,8 +27,6 @@ import pandas as pd
 import numpy as np
 
 
-
-
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import Dense, Dropout, Activation, LSTM
 from tensorflow.keras.optimizers import RMSprop, Adam
@@ -35,7 +34,7 @@ from tensorflow.keras.optimizers import RMSprop, Adam
 from collections import deque
 
 class DQN:
-    def __init__(self, env, inputshape=(5,42)):
+    def __init__(self, env):
         self.env     = env
         self.memory  = deque(maxlen=20000)
         
@@ -45,8 +44,6 @@ class DQN:
         self.epsilon_decay = 0.995
         self.learning_rate = 0.005
         self.tau = .125
-
-        self.inputshape = inputshape
 
         self.model        = self.create_model()
         self.target_model = self.create_model()
@@ -66,7 +63,7 @@ class DQN:
             optimizer=Adam(lr=self.learning_rate))
         '''
         model.add(LSTM(64,
-               input_shape=self.inputshape,
+               input_shape=(5,42),
                #return_sequences=True,
                stateful=False
                ))
@@ -150,62 +147,36 @@ class DQN:
 
 
 
+model_path = './model_1.model'
 
 
 
-df = pd.read_csv('./data/MSFT.csv')
+# df = pd.read_csv('./data/MSFT.csv')
+df = pd.read_csv('./data/MSFT_sub_Financial_Crisis.csv')
+
+
 df = df.sort_values('Date')
 
-replay_size = 5
-trials  = 2
-Domain_Randomization_Interval = trial_len = 100
-
-
 # The algorithms require a vectorized environment to run
-env = DummyVecEnv([lambda: StockTradingEnv(df, render_mode='file', replay_size=replay_size, Domain_Randomization_Interval=Domain_Randomization_Interval) ])
+env = DummyVecEnv([lambda: StockTradingEnv(df, render_mode='live')])
 
-obs = env.reset()
-
-print("obs_shape: ", obs.shape)
-
-
-gamma   = 0.9
-epsilon = .95
+dqn_agent = DQN(env=env)
+dqn_agent.model= load_model(model_path)
 
 
-# updateTargetNetwork = 1000
-dqn_agent = DQN(env=env, inputshape=obs.shape[1:])
-steps = []
+obs = obs = env.reset()
 
+for _ in range(200):
 
-for trial in range(trials): 
+    action = dqn_agent.act(obs)
+    # print("Outer action: ", action)
+    # print("type action: ", type(action))
+    if action is 0:
+        action = [0, 0]
+        print("0 action: ", action)
+    if action is 1:
+        action = [1, 0]
+        print("1 action: ", action)
+    obs, rewards, done, info = env.step([action])
+    env.render(title="MSFT")
 
-    cur_state = obs = env.reset()
-    
-    for step in range(trial_len):
-        action = dqn_agent.act(cur_state)
-        print("Outter action: ", action)
-        print(type(action))
-        # TODO - Not sure why will return scalar 0 or 1
-        if action is 0:
-            action = [0, 0]
-            print("0 action: ", action)
-        elif action is 1:
-            action = [1, 0]
-            print("1 action: ", action)
-
-        new_state, reward, done, info = env.step([action])
-        reward = reward*10 if not done else -10 # TODO - Need to adjust this for better training / Maybe using other algorithm may help
-        env.render(title="MSFT")
-        # new_state =list(new_state.items())[0][1]
-        # new_state= np.reshape(new_state, (30,4,1))
-        dqn_agent.target_train() # iterates target model
-
-        cur_state = new_state
-        if done:
-            break
-
-    print("Completed trial #{} ".format(trial))
-    # dqn_agent.render_all_modes(env)
-    dqn_agent.save_model("model_{}.model".format(trial))
-        

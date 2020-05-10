@@ -1,3 +1,4 @@
+import os
 import random
 import json
 import gym
@@ -27,10 +28,24 @@ class StockTradingEnv(gym.Env):
     metadata = {'render.modes': ['live', 'file', 'none']}
     visualization = None
 
-    def __init__(self, df):
+    def __init__(self, df, render_mode='file', filename='render.txt',  Domain_Randomization_Interval=None, replay_size=5):
         super(StockTradingEnv, self).__init__()
 
         self.df = self._adjust_prices(df)
+        self.render_mode = render_mode
+        self.filename = filename
+
+        if self.render_mode == 'file':
+            # Check if file already exit, if so delete it
+            if os.path.exists(self.filename):
+                os.remove(self.filename)
+
+        self.replay_size = replay_size
+
+        # For Domain Randomization
+        self.Domain_Randomization_Interval = Domain_Randomization_Interval
+
+
         self.reward_range = (0, MAX_ACCOUNT_BALANCE)
 
         # Actions of the format Buy x%, Sell x%, Hold, etc.
@@ -57,7 +72,7 @@ class StockTradingEnv(gym.Env):
         frame = np.zeros((5, LOOKBACK_WINDOW_SIZE + 1))
 
         # Get the stock data points for the last 5 days and scale to between 0-1
-        np.put(frame, [0, 4], [
+        np.put(frame, [0, self.replay_size - 1], [
             self.df.loc[self.current_step: self.current_step +
                         LOOKBACK_WINDOW_SIZE, 'Open'].values / MAX_SHARE_PRICE,
             self.df.loc[self.current_step: self.current_step +
@@ -157,14 +172,24 @@ class StockTradingEnv(gym.Env):
         self.current_step = 0
         self.trades = []
 
+        if self.Domain_Randomization_Interval != None:
+            print("Do Unifrom Domain Randomization!!!")
+            rand_step = random.randint(0, len(self.df))
+            if (rand_step + self.Domain_Randomization_Interval) > len(self.df):
+                self.current_step = rand_step - ((rand_step + self.Domain_Randomization_Interval) - len(self.df))
+            else:
+                self.current_step = rand_step
+
         return self._next_observation()
 
-    def _render_to_file(self, filename='render.txt'):
+    def _render_to_file(self):
         profit = self.net_worth - INITIAL_ACCOUNT_BALANCE
 
-        file = open(filename, 'a+')
+        file = open(self.filename, 'a+')
 
         file.write(f'Step: {self.current_step}\n')
+        file.write(f'Trading Date: {self.df["Date"].values[self.current_step]}\n')
+
         file.write(f'Balance: {self.balance}\n')
         file.write(
             f'Shares held: {self.shares_held} (Total sold: {self.total_shares_sold})\n')
@@ -176,12 +201,12 @@ class StockTradingEnv(gym.Env):
 
         file.close()
 
-    def render(self, mode='live', **kwargs):
+    def render(self, **kwargs):
         # Render the environment to the screen
-        if mode == 'file':
-            self._render_to_file(kwargs.get('filename', 'render.txt'))
+        if self.render_mode == 'file':
+            self._render_to_file()
 
-        elif mode == 'live':
+        elif self.render_mode == 'live':
             if self.visualization == None:
                 self.visualization = StockTradingGraph(
                     self.df, kwargs.get('title', None))
