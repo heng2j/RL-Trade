@@ -19,6 +19,9 @@ INFLATION_RATE = (0.015 / 360)
 
 LOOKBACK_WINDOW_SIZE = 40
 
+INITIAL_ACCOUNT_BALANCE_MIN = 500
+INITIAL_ACCOUNT_BALANCE_MAX = 10000
+
 
 def factor_pairs(val):
     return [(i, val / i) for i in range(1, int(val**0.5)+1) if val % i == 0]
@@ -38,6 +41,7 @@ class StockTradingEnv(gym.Env):
         self.trial_len = trial_len
         self.cur_trial_step = 0
         self.profit = 0 
+        self.init_balance = INITIAL_ACCOUNT_BALANCE
 
         if self.render_mode == 'file':
             # Check if file already exit, if so delete it
@@ -61,8 +65,12 @@ class StockTradingEnv(gym.Env):
         # print("self.action_space: !!!", self.action_space.shape)
 
         # Prices contains the OHCL values for the last five prices
+        # self.observation_space = spaces.Box(
+        #     low=0, high=1, shape=(5, LOOKBACK_WINDOW_SIZE + 2), dtype=np.float16)
+        
         self.observation_space = spaces.Box(
-            low=0, high=1, shape=(5, LOOKBACK_WINDOW_SIZE + 2), dtype=np.float16)
+            low=0, high=1, shape=(10, 41), dtype=np.float16)
+
 
     def _adjust_prices(self, df):
         adjust_ratio = df['Adj Close'] / df['Close']
@@ -75,7 +83,7 @@ class StockTradingEnv(gym.Env):
         return df
 
     def _next_observation(self):
-        # frame = np.zeros((5, LOOKBACK_WINDOW_SIZE + 1))
+        frame = np.zeros((5, LOOKBACK_WINDOW_SIZE + 1))
         # print(" OG frame.shape:", frame.shape)
 
         # Get the stock data points for the last LOOKBACK_WINDOW_SIZE days and scale to between 0-1
@@ -93,42 +101,72 @@ class StockTradingEnv(gym.Env):
         # ])
 
         if self.current_step > (LOOKBACK_WINDOW_SIZE + 1):
-            frame = np.array([
-                self.df.loc[self.current_step: self.current_step +
-                            LOOKBACK_WINDOW_SIZE, 'Open'].values / MAX_SHARE_PRICE,
-                self.df.loc[self.current_step: self.current_step +
-                            LOOKBACK_WINDOW_SIZE, 'High'].values / MAX_SHARE_PRICE,
-                self.df.loc[self.current_step: self.current_step +
-                            LOOKBACK_WINDOW_SIZE, 'Low'].values / MAX_SHARE_PRICE,
-                self.df.loc[self.current_step: self.current_step +
-                            LOOKBACK_WINDOW_SIZE, 'Close'].values / MAX_SHARE_PRICE,
-                self.df.loc[self.current_step: self.current_step +
-                            LOOKBACK_WINDOW_SIZE, 'Volume'].values / MAX_NUM_SHARES,
-            ])
+
+            frame[[0,1,2,3,4]] = [
+                    self.df.loc[self.current_step: self.current_step +
+                                LOOKBACK_WINDOW_SIZE, 'Open'].values / MAX_SHARE_PRICE,
+                    self.df.loc[self.current_step: self.current_step +
+                                LOOKBACK_WINDOW_SIZE, 'High'].values / MAX_SHARE_PRICE,
+                    self.df.loc[self.current_step: self.current_step +
+                                LOOKBACK_WINDOW_SIZE, 'Low'].values / MAX_SHARE_PRICE,
+                    self.df.loc[self.current_step: self.current_step +
+                                LOOKBACK_WINDOW_SIZE, 'Close'].values / MAX_SHARE_PRICE,
+                    self.df.loc[self.current_step: self.current_step +
+                                LOOKBACK_WINDOW_SIZE, 'Volume'].values / MAX_NUM_SHARES,
+                ]
+
         else:
-            frame = np.array([
-                self.df.loc[self.current_step: self.current_step -
-                            LOOKBACK_WINDOW_SIZE, 'Open'].values / MAX_SHARE_PRICE,
-                self.df.loc[self.current_step: self.current_step -
-                            LOOKBACK_WINDOW_SIZE, 'High'].values / MAX_SHARE_PRICE,
-                self.df.loc[self.current_step: self.current_step -
-                            LOOKBACK_WINDOW_SIZE, 'Low'].values / MAX_SHARE_PRICE,
-                self.df.loc[self.current_step: self.current_step -
-                            LOOKBACK_WINDOW_SIZE, 'Close'].values / MAX_SHARE_PRICE,
-                self.df.loc[self.current_step: self.current_step -
-                            LOOKBACK_WINDOW_SIZE, 'Volume'].values / MAX_NUM_SHARES,
-            ])
+            frame[[0,1,2,3,4]] = [
+                self.df.loc[ self.current_step -
+                            LOOKBACK_WINDOW_SIZE : self.current_step, 'Open'].values / MAX_SHARE_PRICE,
+                self.df.loc[self.current_step -
+                            LOOKBACK_WINDOW_SIZE :self.current_step, 'High'].values / MAX_SHARE_PRICE,
+                self.df.loc[self.current_step -
+                            LOOKBACK_WINDOW_SIZE : self.current_step, 'Low'].values / MAX_SHARE_PRICE,
+                self.df.loc[self.current_step -
+                            LOOKBACK_WINDOW_SIZE : self.current_step, 'Close'].values / MAX_SHARE_PRICE,
+                self.df.loc[self.current_step -
+                            LOOKBACK_WINDOW_SIZE : self.current_step, 'Volume'].values / MAX_NUM_SHARES,
+            ]
+
+        # if self.current_step > (LOOKBACK_WINDOW_SIZE + 1):
+        #     frame = np.array([
+        #         self.df.loc[self.current_step: self.current_step +
+        #                     LOOKBACK_WINDOW_SIZE, 'Open'].values / MAX_SHARE_PRICE,
+        #         self.df.loc[self.current_step: self.current_step +
+        #                     LOOKBACK_WINDOW_SIZE, 'High'].values / MAX_SHARE_PRICE,
+        #         self.df.loc[self.current_step: self.current_step +
+        #                     LOOKBACK_WINDOW_SIZE, 'Low'].values / MAX_SHARE_PRICE,
+        #         self.df.loc[self.current_step: self.current_step +
+        #                     LOOKBACK_WINDOW_SIZE, 'Close'].values / MAX_SHARE_PRICE,
+        #         self.df.loc[self.current_step: self.current_step +
+        #                     LOOKBACK_WINDOW_SIZE, 'Volume'].values / MAX_NUM_SHARES,
+        #     ])
+        # else:
+        #     frame = np.array([
+        #         self.df.loc[ self.current_step -
+        #                     LOOKBACK_WINDOW_SIZE : self.current_step, 'Open'].values / MAX_SHARE_PRICE,
+        #         self.df.loc[self.current_step -
+        #                     LOOKBACK_WINDOW_SIZE :self.current_step, 'High'].values / MAX_SHARE_PRICE,
+        #         self.df.loc[self.current_step -
+        #                     LOOKBACK_WINDOW_SIZE : self.current_step, 'Low'].values / MAX_SHARE_PRICE,
+        #         self.df.loc[self.current_step -
+        #                     LOOKBACK_WINDOW_SIZE : self.current_step, 'Close'].values / MAX_SHARE_PRICE,
+        #         self.df.loc[self.current_step -
+        #                     LOOKBACK_WINDOW_SIZE : self.current_step, 'Volume'].values / MAX_NUM_SHARES,
+        #     ])
 
 
         # Append additional data and scale each value to between 0-1
-        obs = np.append(frame, [
-            [self.balance / MAX_ACCOUNT_BALANCE],
-            [self.max_net_worth / MAX_ACCOUNT_BALANCE],
-            [self.shares_held / MAX_NUM_SHARES],
-            [self.cost_basis / MAX_SHARE_PRICE],
-            [self.total_sales_value / (MAX_NUM_SHARES * MAX_SHARE_PRICE)],
-        ], axis=1)
+        current_performance = [
+            [self.balance / MAX_ACCOUNT_BALANCE] * (LOOKBACK_WINDOW_SIZE + 1),
+            [self.max_net_worth / MAX_ACCOUNT_BALANCE] * (LOOKBACK_WINDOW_SIZE + 1),
+            [self.shares_held / MAX_NUM_SHARES] * (LOOKBACK_WINDOW_SIZE + 1),
+            [self.cost_basis / MAX_SHARE_PRICE] * (LOOKBACK_WINDOW_SIZE + 1),
+            [self.total_sales_value / (MAX_NUM_SHARES * MAX_SHARE_PRICE)] * (LOOKBACK_WINDOW_SIZE + 1)
+        ]
 
+        obs = np.append(frame, current_performance, axis=0)
 
         return obs
 
@@ -136,8 +174,8 @@ class StockTradingEnv(gym.Env):
         current_price = random.uniform(
             self.df.loc[self.current_step, "Open"], self.df.loc[self.current_step, "Close"])
         
-        print("action: ", action)
-        print("Before balance: ", self.balance)
+        # print("action: ", action)
+        # print("Before balance: ", self.balance)
 
         action_type = action[0]
         amount = action[1]
@@ -158,9 +196,9 @@ class StockTradingEnv(gym.Env):
                 self.trades.append({'step': self.current_step,
                                     'shares': shares_bought, 'total': additional_cost,
                                     'type': "buy"})
-                print({'step': self.current_step,
-                                    'shares': shares_bought, 'total': additional_cost,
-                                    'type': "buy"})
+                # print({'step': self.current_step,
+                #                     'shares': shares_bought, 'total': additional_cost,
+                #                     'type': "buy"})
 
         elif action_type < 2:
             # Sell amount % of shares held
@@ -174,9 +212,9 @@ class StockTradingEnv(gym.Env):
                 self.trades.append({'step': self.current_step,
                                     'shares': shares_sold, 'total': shares_sold * current_price,
                                     'type': "sell"})
-                print({'step': self.current_step,
-                                    'shares': shares_sold, 'total': shares_sold * current_price,
-                                    'type': "sell"})
+                # print({'step': self.current_step,
+                #                     'shares': shares_sold, 'total': shares_sold * current_price,
+                #                     'type': "sell"})
 
         self.net_worth = self.balance + self.shares_held * current_price
 
@@ -186,8 +224,8 @@ class StockTradingEnv(gym.Env):
         if self.shares_held == 0:
             self.cost_basis = 0
 
-        self.profit = self.net_worth - INITIAL_ACCOUNT_BALANCE
-        print("after balance: ",  self.balance)
+        self.profit = self.net_worth - self.init_balance
+        # print("after balance: ",  self.balance)
 
     def step(self, action):
 
@@ -197,6 +235,9 @@ class StockTradingEnv(gym.Env):
         self.current_step += 1
         self.cur_trial_step  += 1
 
+        if self.current_step >= len(self.df.loc[:, 'Open'].values):
+            self.current_step = 0
+
         # TODO update delay_modifer to consider the subset window only
         # delay_modifier = (self.current_step / MAX_STEPS)
         delay_modifier = (self.cur_trial_step / MAX_STEPS)
@@ -205,9 +246,9 @@ class StockTradingEnv(gym.Env):
         # reward = self.balance * delay_modifier + self.current_step
         reward = self.balance * delay_modifier + self.profit  - ( self.cur_trial_step * (self.balance * INFLATION_RATE)) 
         # print("delay_modifier: ", delay_modifier)
-        # print("Step balance: ", self.balance)
-        print("Step profit :", self.profit  )
-        print("Step function reward: ", reward)
+        # print("Step function balance: ", self.balance)
+        # print("Step function profit :", self.profit  )
+        # print("Step function reward: ", reward)
 
 
         done = self.net_worth <= 0 or self.current_step >= len(
@@ -222,6 +263,7 @@ class StockTradingEnv(gym.Env):
         self.balance = INITIAL_ACCOUNT_BALANCE
         self.net_worth = INITIAL_ACCOUNT_BALANCE
         self.max_net_worth = INITIAL_ACCOUNT_BALANCE
+        self.init_balance = INITIAL_ACCOUNT_BALANCE
         self.shares_held = 0
         self.cost_basis = 0
         self.total_shares_sold = 0
@@ -237,11 +279,16 @@ class StockTradingEnv(gym.Env):
                 self.current_step = rand_step - ((rand_step + self.Domain_Randomization_Interval) - len(self.df))
             else:
                 self.current_step = rand_step
+            
+            self.balance = random.randint(INITIAL_ACCOUNT_BALANCE_MIN, INITIAL_ACCOUNT_BALANCE_MAX)
+            self.init_balance  = self.balance
+            self.max_net_worth = self.init_balance
+            self.net_worth = self.init_balance
 
         return self._next_observation()
 
     def _render_to_file(self):
-        profit = self.net_worth - INITIAL_ACCOUNT_BALANCE
+        profit = self.net_worth - self.init_balance
 
         file = open(self.filename, 'a+')
 

@@ -37,7 +37,7 @@ from collections import deque
 
 
 class DQN:
-    def __init__(self, env, inputshape=(5,42)):
+    def __init__(self, env, inputshape=(5,82)):
         self.env     = env
         self.memory  = deque(maxlen=20000)
         
@@ -202,12 +202,10 @@ env = DummyVecEnv([lambda: StockTradingEnv(df, render_mode='file', filename=file
 
 obs = env.reset()
 
+
 print("obs shape!!!!!!: ", obs.shape)
 
-shape_tmp = list(obs.shape)
-shape_tmp =  [32] + shape_tmp 
-
-print("updated obs shape!!!!!!: ", tuple(shape_tmp) )
+print(obs)
 
 
 

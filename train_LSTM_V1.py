@@ -131,6 +131,7 @@ class DQN:
         model.compile(loss="mean_squared_error",
             optimizer=Adam(lr=self.learning_rate))
         '''
+        
         model.add(LSTM(64,
                input_shape=self.inputshape,
             #    input_shape=(4,1),
@@ -151,7 +152,7 @@ class DQN:
         # print(self.env.action_space.shape[0])
 
         model.add(Dense(self.env.action_space.shape[0], kernel_initializer='lecun_uniform'))
-        model.add(Activation('linear')) #linear output so we can have range of real-valued outputs
+        model.add(Activation('relu')) #linear output so we can have range of real-valued outputs
 
         rms = RMSprop()
         adam = Adam()
@@ -167,7 +168,7 @@ class DQN:
         else:
             predict = self.model.predict(state)
             result = np.argmax(predict[0])
-            print("self.model.predict(state): ", predict)
+            # print("self.model.predict(state): ", predict)
             if result == 0:
                 return [0, 0]
             elif result == 1:
@@ -200,6 +201,7 @@ class DQN:
                 # print("reward + Q_future * self.gamma: ", reward + Q_future * self.gamma)
                 target[0][0] = reward + Q_future * self.gamma
 
+                # print("target after: ", target)
             self.model.fit(state, target, epochs=1, verbose=0)
 
 
@@ -249,17 +251,16 @@ class DQN:
 
 
 
-
-
 df = pd.read_csv('./data/MSFT.csv')
 df = df.sort_values('Date')
 
 replay_size = 10
-trials  = 2
-trial_len = 50
-Domain_Randomization_Interval = None
-filename = 'base_line_render.txt'
-# filename = 'UDR_render.txt'
+trials  = 5
+trial_len = 100
+Domain_Randomization_Interval = 100
+# filename = 'base_line_LSTM_render.txt'
+filename = 'base_line_LSTM_V2_render.txt'
+# filename = 'UDR_base_line_render.txt'
 
 
 # The algorithms require a vectorized environment to run
@@ -268,7 +269,7 @@ env = DummyVecEnv([lambda: StockTradingEnv(df, render_mode='file', filename=file
 obs = env.reset()
 
 print("obs shape!!!!!!: ", obs.shape)
-print(obs)
+
 
 
 
@@ -283,25 +284,23 @@ steps = []
 
 for trial in range(trials): 
 
+    
     cur_state = obs = env.reset()
     
     for step in range(trial_len):
         action = dqn_agent.act(cur_state)
-        print("Outter action: ", action)
+        # print("Outter action: ", action)
         # print(type(action))
         # TODO - Not sure why will return scalar 0 or 1
         if action is 0:
             action = [0, 0]
-            print("0 action: ", action)
+            # print("0 action: ", action)
         elif action is 1:
             action = [1, 0]
-            print("1 action: ", action)
+            # print("1 action: ", action)
 
         new_state, reward, done, info = env.step([action])
-        print("Step reward: ", reward)
-
-
-
+        # print("Step reward: ", reward)
 
         reward = reward*10 if not done else -10 # TODO - Need to adjust this for better training / Maybe using other algorithm may help
         env.render(title="MSFT")
@@ -310,17 +309,19 @@ for trial in range(trials):
 
         # For training
         dqn_agent.remember(cur_state, action, reward, new_state, done)
-        # dqn_agent.replay()  
+        dqn_agent.replay()  
         dqn_agent.target_train() # iterates target model
 
         cur_state = new_state
         if done:
             break
 
-print("Completed trial #{} ".format(trial))
+    print("Completed trial #{} ".format(trial))
+
 # dqn_agent.render_all_modes(env)
-model_code = 'baseline_V2_{0}_iterations_{1}_steps_each'.format(trials,Domain_Randomization_Interval)
-# model_code = 'UDR_{0}_iterations_{1}_steps_each'.format(trials,Domain_Randomization_Interval)
+#model_code = 'baseline_LSTM_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
+model_code = 'baseline_LSTM_V2_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
+# model_code = 'UDR_baseline_LSTM_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
 
 dqn_agent.save_model("model_{}.model".format(model_code))
         
