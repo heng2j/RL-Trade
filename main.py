@@ -95,11 +95,15 @@ class DQN:
         self.epsilon *= self.epsilon_decay
         self.epsilon = max(self.epsilon_min, self.epsilon)
         if np.random.random() < self.epsilon:
+            # print("Sampled action space")
             return self.env.action_space.sample()
         else:
             result = np.argmax(self.model.predict(state)[0])
+            print("self.model.predict(state): ", self.model.predict(state))
             if result == 0:
                 return [0, 0]
+            elif result == 1:
+                return [1, 0]
             else:
                 return result
         # return np.argmax(self.model.predict(state)[0])
@@ -159,9 +163,9 @@ df = df.sort_values('Date')
 replay_size = 10
 trials  = 5
 trial_len = 100
-Domain_Randomization_Interval = 100
-# filename = 'base_line_render.txt'
-filename = 'UDR_render.txt'
+Domain_Randomization_Interval = None
+filename = 'base_line_render.txt'
+# filename = 'UDR_render.txt'
 
 
 # The algorithms require a vectorized environment to run
@@ -210,8 +214,8 @@ for trial in range(trials):
 
 print("Completed trial #{} ".format(trial))
 # dqn_agent.render_all_modes(env)
-# model_code = 'baseline_{0}_iterations_{1}_steps_each'.format(trials,Domain_Randomization_Interval)
-model_code = 'UDR_{0}_iterations_{1}_steps_each'.format(trials,Domain_Randomization_Interval)
+model_code = 'baseline_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
+# model_code = 'UDR_{0}_iterations_{1}_steps_each'.format(trials,Domain_Randomization_Interval)
 
 dqn_agent.save_model("model_{}.model".format(model_code))
         

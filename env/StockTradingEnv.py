@@ -58,14 +58,14 @@ class StockTradingEnv(gym.Env):
         self.action_space = spaces.Box(
             low=np.array([0, 0]), high=np.array([3, 1]), dtype=np.float16)
 
-        print("self.action_space: !!!", self.action_space.shape)
+        # print("self.action_space: !!!", self.action_space.shape)
 
         # Prices contains the OHCL values for the last five prices
         self.observation_space = spaces.Box(
             low=0, high=1, shape=(5, LOOKBACK_WINDOW_SIZE + 2), dtype=np.float16)
 
     def _adjust_prices(self, df):
-        adjust_ratio = df['Adjusted_Close'] / df['Close']
+        adjust_ratio = df['Adj Close'] / df['Close']
 
         df['Open'] = df['Open'] * adjust_ratio
         df['High'] = df['High'] * adjust_ratio
@@ -76,9 +76,23 @@ class StockTradingEnv(gym.Env):
 
     def _next_observation(self):
         frame = np.zeros((5, LOOKBACK_WINDOW_SIZE + 1))
+        print(" OG frame.shape:", frame.shape)
 
-        # Get the stock data points for the last 5 days and scale to between 0-1
-        np.put(frame, [0, self.replay_size - 1], [
+        # Get the stock data points for the last LOOKBACK_WINDOW_SIZE days and scale to between 0-1
+        # np.put(frame, [0, self.replay_size - 1], [
+        #     self.df.loc[self.current_step: self.current_step +
+        #                 LOOKBACK_WINDOW_SIZE, 'Open'].values / MAX_SHARE_PRICE,
+        #     self.df.loc[self.current_step: self.current_step +
+        #                 LOOKBACK_WINDOW_SIZE, 'High'].values / MAX_SHARE_PRICE,
+        #     self.df.loc[self.current_step: self.current_step +
+        #                 LOOKBACK_WINDOW_SIZE, 'Low'].values / MAX_SHARE_PRICE,
+        #     self.df.loc[self.current_step: self.current_step +
+        #                 LOOKBACK_WINDOW_SIZE, 'Close'].values / MAX_SHARE_PRICE,
+        #     self.df.loc[self.current_step: self.current_step +
+        #                 LOOKBACK_WINDOW_SIZE, 'Volume'].values / MAX_NUM_SHARES,
+        # ])
+
+        frame = np.array([
             self.df.loc[self.current_step: self.current_step +
                         LOOKBACK_WINDOW_SIZE, 'Open'].values / MAX_SHARE_PRICE,
             self.df.loc[self.current_step: self.current_step +
@@ -90,6 +104,10 @@ class StockTradingEnv(gym.Env):
             self.df.loc[self.current_step: self.current_step +
                         LOOKBACK_WINDOW_SIZE, 'Volume'].values / MAX_NUM_SHARES,
         ])
+        # print(self.df.head(LOOKBACK_WINDOW_SIZE))
+
+        print("frame.shape:",  self.df.loc[self.current_step: self.current_step +
+                        LOOKBACK_WINDOW_SIZE, 'Open'].values / MAX_SHARE_PRICE)
 
         # Append additional data and scale each value to between 0-1
         obs = np.append(frame, [
@@ -174,11 +192,9 @@ class StockTradingEnv(gym.Env):
         # TODO - Update reward System
         # reward = self.balance * delay_modifier + self.current_step
         reward = self.balance * delay_modifier + self.profit  - ( self.cur_trial_step * (self.balance * INFLATION_RATE)) 
-        print("delay_modifier: ", delay_modifier)
-        print("Step balance: ", self.balance)
+        # print("delay_modifier: ", delay_modifier)
+        # print("Step balance: ", self.balance)
         print("Step profit :", self.profit  )
-
-
         print("Step function reward: ", reward)
 
 

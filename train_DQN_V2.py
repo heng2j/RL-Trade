@@ -133,6 +133,7 @@ class DQN:
         '''
         model.add(LSTM(64,
                input_shape=self.inputshape,
+            #    input_shape=(4,1),
                #return_sequences=True,
                stateful=False
                ))
@@ -161,11 +162,16 @@ class DQN:
         self.epsilon *= self.epsilon_decay
         self.epsilon = max(self.epsilon_min, self.epsilon)
         if np.random.random() < self.epsilon:
+            # print("Sampled action space")
             return self.env.action_space.sample()
         else:
-            result = np.argmax(self.model.predict(state)[0])
+            predict = self.model.predict(state)
+            result = np.argmax(predict[0])
+            print("self.model.predict(state): ", predict)
             if result == 0:
                 return [0, 0]
+            elif result == 1:
+                return [1, 0]
             else:
                 return result
         # return np.argmax(self.model.predict(state)[0])
@@ -186,13 +192,13 @@ class DQN:
                 target[0][action] = reward
             else:
                 Q_future = max(self.target_model.predict(new_state)[0])
-                print("Q_future: ", Q_future)
-                print("action: ", action)
-                print("target: ", target)
-                print("reward: ", reward)
+                # print("Q_future: ", Q_future)
+                # print("action: ", action)
+                # print("target: ", target)
+                # print("reward: ", reward)
 
-                print("reward + Q_future * self.gamma: ", reward + Q_future * self.gamma)
-                target[0][action] = reward + Q_future * self.gamma
+                # print("reward + Q_future * self.gamma: ", reward + Q_future * self.gamma)
+                target[0][0] = reward + Q_future * self.gamma
 
             self.model.fit(state, target, epochs=1, verbose=0)
 
@@ -252,16 +258,18 @@ replay_size = 10
 trials  = 2
 trial_len = 50
 Domain_Randomization_Interval = None
-# filename = 'base_line_render.txt'
-filename = 'UDR_render.txt'
+filename = 'base_line_render.txt'
+# filename = 'UDR_render.txt'
 
 
 # The algorithms require a vectorized environment to run
-env = DummyVecEnv([lambda: StockTradingEnv(df, render_mode='file', filename=filename, replay_size=replay_size,trial_len=trial_len,  Domain_Randomization_Interval=Domain_Randomization_Interval) ])
+env = DummyVecEnv([lambda: StockTradingEnv(df, render_mode='file', filename=filename, replay_size=replay_size,trial_len=trial_len, Domain_Randomization_Interval=Domain_Randomization_Interval) ])
 
 obs = env.reset()
 
-print("obs_shape: ", obs.shape)
+print("obs shape!!!!!!: ", obs.shape)
+print(obs)
+
 
 
 gamma   = 0.9
@@ -280,7 +288,7 @@ for trial in range(trials):
     for step in range(trial_len):
         action = dqn_agent.act(cur_state)
         print("Outter action: ", action)
-        print(type(action))
+        # print(type(action))
         # TODO - Not sure why will return scalar 0 or 1
         if action is 0:
             action = [0, 0]
@@ -294,6 +302,7 @@ for trial in range(trials):
 
 
 
+
         reward = reward*10 if not done else -10 # TODO - Need to adjust this for better training / Maybe using other algorithm may help
         env.render(title="MSFT")
         # new_state =list(new_state.items())[0][1]
@@ -301,7 +310,7 @@ for trial in range(trials):
 
         # For training
         dqn_agent.remember(cur_state, action, reward, new_state, done)
-        dqn_agent.replay()  
+        # dqn_agent.replay()  
         dqn_agent.target_train() # iterates target model
 
         cur_state = new_state
@@ -310,8 +319,8 @@ for trial in range(trials):
 
 print("Completed trial #{} ".format(trial))
 # dqn_agent.render_all_modes(env)
-# model_code = 'baseline_{0}_iterations_{1}_steps_each'.format(trials,Domain_Randomization_Interval)
-model_code = 'UDR_{0}_iterations_{1}_steps_each'.format(trials,Domain_Randomization_Interval)
+model_code = 'baseline_V2_{0}_iterations_{1}_steps_each'.format(trials,Domain_Randomization_Interval)
+# model_code = 'UDR_{0}_iterations_{1}_steps_each'.format(trials,Domain_Randomization_Interval)
 
 dqn_agent.save_model("model_{}.model".format(model_code))
         
