@@ -75,15 +75,15 @@ class StockTradingEnv(gym.Env):
         return df
 
     def _next_observation(self):
-        frame = np.zeros((5, LOOKBACK_WINDOW_SIZE + 1))
-        print(" OG frame.shape:", frame.shape)
+        # frame = np.zeros((5, LOOKBACK_WINDOW_SIZE + 1))
+        # print(" OG frame.shape:", frame.shape)
 
         # Get the stock data points for the last LOOKBACK_WINDOW_SIZE days and scale to between 0-1
         # np.put(frame, [0, self.replay_size - 1], [
         #     self.df.loc[self.current_step: self.current_step +
         #                 LOOKBACK_WINDOW_SIZE, 'Open'].values / MAX_SHARE_PRICE,
         #     self.df.loc[self.current_step: self.current_step +
-        #                 LOOKBACK_WINDOW_SIZE, 'High'].values / MAX_SHARE_PRICE,
+        #                 LOOKBACK_WINDOW_SIZE, 'High'].valuesOG frame.shape:  / MAX_SHARE_PRICE,
         #     self.df.loc[self.current_step: self.current_step +
         #                 LOOKBACK_WINDOW_SIZE, 'Low'].values / MAX_SHARE_PRICE,
         #     self.df.loc[self.current_step: self.current_step +
@@ -92,22 +92,33 @@ class StockTradingEnv(gym.Env):
         #                 LOOKBACK_WINDOW_SIZE, 'Volume'].values / MAX_NUM_SHARES,
         # ])
 
-        frame = np.array([
-            self.df.loc[self.current_step: self.current_step +
-                        LOOKBACK_WINDOW_SIZE, 'Open'].values / MAX_SHARE_PRICE,
-            self.df.loc[self.current_step: self.current_step +
-                        LOOKBACK_WINDOW_SIZE, 'High'].values / MAX_SHARE_PRICE,
-            self.df.loc[self.current_step: self.current_step +
-                        LOOKBACK_WINDOW_SIZE, 'Low'].values / MAX_SHARE_PRICE,
-            self.df.loc[self.current_step: self.current_step +
-                        LOOKBACK_WINDOW_SIZE, 'Close'].values / MAX_SHARE_PRICE,
-            self.df.loc[self.current_step: self.current_step +
-                        LOOKBACK_WINDOW_SIZE, 'Volume'].values / MAX_NUM_SHARES,
-        ])
-        # print(self.df.head(LOOKBACK_WINDOW_SIZE))
+        if self.current_step > (LOOKBACK_WINDOW_SIZE + 1):
+            frame = np.array([
+                self.df.loc[self.current_step: self.current_step +
+                            LOOKBACK_WINDOW_SIZE, 'Open'].values / MAX_SHARE_PRICE,
+                self.df.loc[self.current_step: self.current_step +
+                            LOOKBACK_WINDOW_SIZE, 'High'].values / MAX_SHARE_PRICE,
+                self.df.loc[self.current_step: self.current_step +
+                            LOOKBACK_WINDOW_SIZE, 'Low'].values / MAX_SHARE_PRICE,
+                self.df.loc[self.current_step: self.current_step +
+                            LOOKBACK_WINDOW_SIZE, 'Close'].values / MAX_SHARE_PRICE,
+                self.df.loc[self.current_step: self.current_step +
+                            LOOKBACK_WINDOW_SIZE, 'Volume'].values / MAX_NUM_SHARES,
+            ])
+        else:
+            frame = np.array([
+                self.df.loc[self.current_step: self.current_step -
+                            LOOKBACK_WINDOW_SIZE, 'Open'].values / MAX_SHARE_PRICE,
+                self.df.loc[self.current_step: self.current_step -
+                            LOOKBACK_WINDOW_SIZE, 'High'].values / MAX_SHARE_PRICE,
+                self.df.loc[self.current_step: self.current_step -
+                            LOOKBACK_WINDOW_SIZE, 'Low'].values / MAX_SHARE_PRICE,
+                self.df.loc[self.current_step: self.current_step -
+                            LOOKBACK_WINDOW_SIZE, 'Close'].values / MAX_SHARE_PRICE,
+                self.df.loc[self.current_step: self.current_step -
+                            LOOKBACK_WINDOW_SIZE, 'Volume'].values / MAX_NUM_SHARES,
+            ])
 
-        print("frame.shape:",  self.df.loc[self.current_step: self.current_step +
-                        LOOKBACK_WINDOW_SIZE, 'Open'].values / MAX_SHARE_PRICE)
 
         # Append additional data and scale each value to between 0-1
         obs = np.append(frame, [
@@ -117,6 +128,7 @@ class StockTradingEnv(gym.Env):
             [self.cost_basis / MAX_SHARE_PRICE],
             [self.total_sales_value / (MAX_NUM_SHARES * MAX_SHARE_PRICE)],
         ], axis=1)
+
 
         return obs
 

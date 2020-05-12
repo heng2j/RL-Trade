@@ -97,6 +97,8 @@ class DQN:
             result = np.argmax(self.model.predict(state)[0])
             if result == 0:
                 return [0, 0]
+            elif result == 1:
+                return [1, 0]
             else:
                 return result
         # return np.argmax(self.model.predict(state)[0])
@@ -150,14 +152,17 @@ class DQN:
 model_path = './model_1.model'
 model_path = './model_baseline_5_iterations_None_steps_each.model'
 model_path = './model_UDR_5_iterations_100_steps_each.model'
+model_path = './model_baseline_V2_2_iterations_None_steps_each.model'
 
 
 
 
 
 
-# df = pd.read_csv('./data/MSFT.csv')
-df = pd.read_csv('./data/MSFT_sub_Financial_Crisis.csv')
+
+df = pd.read_csv('./data/MSFT.csv')
+# df = pd.read_csv('./data/MSFT_sub_Financial_Crisis.csv')
+
 
 
 df = df.sort_values('Date')
