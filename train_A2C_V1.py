@@ -48,7 +48,7 @@ class ActorCritic:
 
         self.learning_rate = 0.001
         self.epsilon = 1.0
-        self.epsilon_decay = .995
+        self.epsilon_decay = .9995
         self.gamma = .95
         self.tau = .125
 
@@ -123,6 +123,8 @@ class ActorCritic:
 
     def create_critic_model(self):
         state_input = Input(shape=self.env.observation_space.shape[1:])
+
+
         state_h1 = Dense(24, activation='relu')(state_input)
         state_h2 = Dense(48)(state_h1)
 
@@ -243,9 +245,9 @@ df = pd.read_csv('./data/MSFT.csv')
 df = df.sort_values('Date')
 
 replay_size = 10
-trials  = 2
-trial_len = 100
-Domain_Randomization_Interval = None
+trials  = 10
+trial_len = 300
+Domain_Randomization_Interval = 300
 # filename = 'base_line_LSTM_render.txt'
 # filename = 'base_line_A2C_V1_render.txt'
 filename = 'UDR_base_line_A2C_V1_render.txt'
@@ -356,6 +358,9 @@ for trial in range(trials):
             break
 
     print("Completed trial #{} ".format(trial))
+    actor_critic.epsilon = 1.0 - (trial * 0.1)
+    print("Reset Agent's epsilon to:  ", actor_critic.epsilon)
+
 
 columns = ['step', 'date', 'balance', 'shares_held', 'total_shares_sold',
             'cost_basis', 'total_sales_value', 'net_worth', 'max_net_worth',
@@ -369,8 +374,8 @@ df.to_csv(export_summary_stat_path)
 # dqn_agent.render_all_modes(env)
 #model_code = 'baseline_LSTM_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
 
-model_code = 'baseline_A2C_V1_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
-# model_code = 'UDR_baseline_A2C_V1_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
+# model_code = 'baseline_A2C_V1_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
+model_code = 'UDR_baseline_A2C_V1_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
 
 actor_critic.save_model("./models/model_{}.model".format(model_code))
         
