@@ -32,7 +32,7 @@ class StockTradingEnv(gym.Env):
     metadata = {'render.modes': ['live', 'file', 'none']}
     visualization = None
 
-    def __init__(self, df, render_mode='file', filename='render.txt', trial_len=100,  Domain_Randomization_Interval=None, replay_size=5):
+    def __init__(self, df, render_mode='file', filename='render.txt', export_summary_stat_path='summary_stat.csv', trial_len=100,  Domain_Randomization_Interval=None, replay_size=5):
         super(StockTradingEnv, self).__init__()
 
         self.df = self._adjust_prices(df)
@@ -42,6 +42,10 @@ class StockTradingEnv(gym.Env):
         self.cur_trial_step = 0
         self.profit = 0 
         self.init_balance = INITIAL_ACCOUNT_BALANCE
+        self.cur_reward = 0
+        self.cur_action = 0
+        self.summary_stat = []
+        self.export_summary_stat_path = export_summary_stat_path
 
         if self.render_mode == 'file':
             # Check if file already exit, if so delete it
@@ -100,7 +104,7 @@ class StockTradingEnv(gym.Env):
         #                 LOOKBACK_WINDOW_SIZE, 'Volume'].values / MAX_NUM_SHARES,
         # ])
 
-        if self.current_step > (LOOKBACK_WINDOW_SIZE + 1):
+        if self.current_step < (LOOKBACK_WINDOW_SIZE + 1):
 
             frame[[0,1,2,3,4]] = [
                     self.df.loc[self.current_step: self.current_step +
@@ -167,6 +171,9 @@ class StockTradingEnv(gym.Env):
         ]
 
         obs = np.append(frame, current_performance, axis=0)
+
+        # print("obs shape", obs.shape)
+
 
         return obs
 
@@ -250,13 +257,15 @@ class StockTradingEnv(gym.Env):
         # print("Step function profit :", self.profit  )
         # print("Step function reward: ", reward)
 
+        self.cur_action = action
+        self.cur_reward = reward
 
         done = self.net_worth <= 0 or self.current_step >= len(
             self.df.loc[:, 'Open'].values)
 
         obs = self._next_observation()
 
-        return obs, reward, done, {}
+        return obs, reward, done, self.summary_stat
 
     def reset(self):
         # Reset the state of the environment to an initial state
@@ -319,6 +328,59 @@ class StockTradingEnv(gym.Env):
             if self.current_step > LOOKBACK_WINDOW_SIZE:
                 self.visualization.render(
                     self.current_step, self.net_worth, self.trades, window_size=LOOKBACK_WINDOW_SIZE)
+        else:
+            self._render_to_memory()
+
+
+    def export_run_summary(self):
+
+        columns = ['step', 'date', 'balance', 'shares_held', 'total_shares_sold',
+                    'cost_basis', 'total_sales_value', 'net_worth', 'max_net_worth',
+                    'cur_reward', 'cur_action', 'profit'
+                    ]
+
+        df = pd.DataFrame(self.summary_stat,columns=columns)
+        df.to_csv(self.export_summary_stat_path)
+
+        return 
+
+
+    def _render_to_memory(self):
+
+        profit = self.net_worth - self.init_balance
+
+        step_data = [self.current_step,
+                self.df["Date"].values[self.current_step],
+                self.balance,
+                self.shares_held,
+                self.total_shares_sold,
+                self.cost_basis,
+                self.total_sales_value,
+                self.net_worth,
+                self.max_net_worth,
+                self.cur_reward,
+                self.cur_action,
+                profit
+                ]
+
+        self.summary_stat.append(step_data)
+
+        print(f'Step: {self.current_step}\n')
+        print(f'Trading Date: {self.df["Date"].values[self.current_step]}\n')
+
+        print(f'Balance: {self.balance}\n')
+        print(
+            f'Shares held: {self.shares_held} (Total sold: {self.total_shares_sold})\n')
+        print(
+            f'Avg cost for held shares: {self.cost_basis} (Total sales value: {self.total_sales_value})\n')
+        print(
+            f'Net worth: {self.net_worth} (Max net worth: {self.max_net_worth})\n')
+        print(f'Action: {self.cur_action}\n')
+        print(f'Reward: {self.cur_reward}\n')
+        print(f'Profit: {profit}\n\n')
+
+                
+
 
     def close(self):
         if self.visualization != None:

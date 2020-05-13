@@ -258,8 +258,8 @@ replay_size = 10
 trials  = 5
 trial_len = 100
 Domain_Randomization_Interval = 100
-# filename = 'base_line_LSTM_render.txt'
-filename = 'base_line_LSTM_V2_render.txt'
+filename = 'base_line_LSTM_V1_render.txt'
+# filename = 'base_line_LSTM_V2_render.txt'
 # filename = 'UDR_base_line_render.txt'
 
 
@@ -320,7 +320,7 @@ for trial in range(trials):
 
 # dqn_agent.render_all_modes(env)
 #model_code = 'baseline_LSTM_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
-model_code = 'baseline_LSTM_V2_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
+model_code = 'baseline_LSTM_1_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
 # model_code = 'UDR_baseline_LSTM_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
 
 dqn_agent.save_model("model_{}.model".format(model_code))

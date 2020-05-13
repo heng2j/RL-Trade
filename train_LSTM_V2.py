@@ -72,7 +72,7 @@ class DQN:
             optimizer=Adam(lr=self.learning_rate))
         '''
 
-        model.add(LSTM(units=64, return_sequences=True, batch_input_shape=tuple([self.batch_size]+ list(self.inputshape)), unroll=True, stateful=True))
+        model.add(LSTM(units=64, return_sequences=True, batch_input_shape=tuple([self.batch_size]+ list(self.inputshape)), unroll=False, stateful=False))
         model.add(Dropout(0.2))  
         model.add(LSTM(units=64, return_sequences=True))  
         model.add(Dropout(0.2))
@@ -189,16 +189,18 @@ df = pd.read_csv('./data/MSFT.csv')
 df = df.sort_values('Date')
 
 replay_size = 10
-trials  = 5
-trial_len = 200
-Domain_Randomization_Interval = 100
+trials  = 2
+trial_len = 10
+Domain_Randomization_Interval = None
 # filename = 'base_line_LSTM_render.txt'
 filename = 'base_line_LSTM_V2_render.txt'
 # filename = 'UDR_base_line_render.txt'
 
 
+export_summary_stat_path = './run_summary/base_line_LSTM_V2_run_summary.csv'
+
 # The algorithms require a vectorized environment to run
-env = DummyVecEnv([lambda: StockTradingEnv(df, render_mode='file', filename=filename, replay_size=replay_size,trial_len=trial_len, Domain_Randomization_Interval=Domain_Randomization_Interval) ])
+env = DummyVecEnv([lambda: StockTradingEnv(df, render_mode='None', filename=filename, export_summary_stat_path=export_summary_stat_path, replay_size=replay_size,trial_len=trial_len, Domain_Randomization_Interval=Domain_Randomization_Interval) ])
 
 obs = env.reset()
 
@@ -236,10 +238,11 @@ for trial in range(trials):
             action = [1, 0]
             # print("1 action: ", action)
 
-        new_state, reward, done, info = env.step([action])
+        new_state, reward, done, summary_stat = env.step([action])
         # print("Step reward: ", reward)
 
         reward = reward*10 if not done else -10 # TODO - Need to adjust this for better training / Maybe using other algorithm may help
+        
         env.render(title="MSFT")
         # new_state =list(new_state.items())[0][1]
         # new_state= np.reshape(new_state, (30,4,1))
@@ -254,6 +257,15 @@ for trial in range(trials):
             break
 
     print("Completed trial #{} ".format(trial))
+
+columns = ['step', 'date', 'balance', 'shares_held', 'total_shares_sold',
+            'cost_basis', 'total_sales_value', 'net_worth', 'max_net_worth',
+            'cur_reward', 'cur_action', 'profit'
+            ]
+
+# print("summary_stat: ", summary_stat[0])
+df = pd.DataFrame(summary_stat[0],columns=columns)
+df.to_csv(export_summary_stat_path)
 
 # dqn_agent.render_all_modes(env)
 #model_code = 'baseline_LSTM_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
