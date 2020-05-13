@@ -92,6 +92,8 @@ class ActorCritic:
 
         _, _, self.target_critic_model = self.create_critic_model()
 
+        print(        self.target_critic_model.summary())
+
         self.critic_grads = tf.gradients(self.critic_model.output,
                                          self.critic_action_input)  # where we calcaulte de/dC for feeding above
 
@@ -124,7 +126,8 @@ class ActorCritic:
         state_h1 = Dense(24, activation='relu')(state_input)
         state_h2 = Dense(48)(state_h1)
 
-        action_input = Input(shape=self.env.action_space.shape)
+        action_input = Input(shape=self.env.action_space.shape) # Hack the shape for error ValueError: Error when checking input: expected input_4 to have shape (2,) but got array with shape (1,)
+        # action_input = Input(shape=(1,))
         action_h1 = Dense(48)(action_input)
 
         merged = Add()([state_h2, action_h1])
@@ -160,14 +163,26 @@ class ActorCritic:
     def _train_critic(self, samples):
         for sample in samples:
             cur_state, action, reward, new_state, done = sample
-            if not done:
+            # print("done: ", done)  
+            # print('doen type', int(done[0]))   
+
+            # if not done:
+            if int(done[0]) == 0:
+                # print("Not Done!!!")
                 target_action = self.target_actor_model.predict(new_state)
+                # print("_train_critic target_action", target_action)
+                # print("_train_critic new_state shape", new_state.shape)
+                # print("_train_critic target_action shape", target_action.shape)
+                # print("_train_critic target_action shape", target_action.shape)
                 future_reward = self.target_critic_model.predict(
                     [new_state, target_action])[0][0]
                 reward += self.gamma * future_reward
-            print("_train_criticcur_state shape", cur_state.shape)
-            print("_train_critic action", action)
-            print("_train_critic action shape", action.shape)
+
+            # print("done: ", done)            
+            # print("_train_critic cur_state shape", cur_state.shape)
+            # print("_train_critic action", action)
+            # print("_train_critic action shape", action.shape)
+            # print("_train_critic reward", reward)
 
             self.critic_model.fit([cur_state, action], reward, verbose=0)
 
@@ -212,21 +227,24 @@ class ActorCritic:
     def act(self, cur_state):
         self.epsilon *= self.epsilon_decay
         if np.random.random() < self.epsilon:
-            return self.env.action_space.sample()
+            samples = []
+            for i in range(10):
+                samples.append(self.env.action_space.sample())
+            return np.array(samples)
 
-        return np.amax(self.actor_model.predict(cur_state), axis=0)    # np.argmax(self.actor_model.predict(state)[0])
-        # return self.actor_model.predict(cur_state)
+        # return np.amax(self.actor_model.predict(cur_state), axis=0)    # np.argmax(self.actor_model.predict(state)[0])
+        return self.actor_model.predict(cur_state)
 
     def save_model(self, fn):
-        self.model.save(fn)
+        self.actor_model.save(fn)
               
 
 df = pd.read_csv('./data/MSFT.csv')
 df = df.sort_values('Date')
 
 replay_size = 10
-trials  = 5
-trial_len = 20
+trials  = 2
+trial_len = 100
 Domain_Randomization_Interval = None
 # filename = 'base_line_LSTM_render.txt'
 # filename = 'base_line_A2C_V1_render.txt'
@@ -250,17 +268,17 @@ print("obs shape!!!!!!: ", obs.shape)
 sess = tf.compat.v1.Session()
 actor_critic = ActorCritic(env, sess)
 
-# cur_state = env.reset()
+cur_state = env.reset()
 
-# print("cur_state shape!!!!!!: ", cur_state.shape)
+print("cur_state shape!!!!!!: ", cur_state.shape)
 
 
-# print("cur_state[0] shape!!!!!!: ", cur_state[0].shape)
+print("cur_state[0] shape!!!!!!: ", cur_state[0].shape)
 
-# new_state = cur_state.reshape(cur_state[0].shape)
-# print("new_state shape", new_state.shape)
+new_state = cur_state.reshape(cur_state[0].shape)
+print("new_state shape", new_state.shape)
 
-# print ( np.array_equal(cur_state[0],new_state ))
+print ( np.array_equal(cur_state[0],new_state ))
 
 # if cur_state[0] is new_state:
 #     print('True')
@@ -272,12 +290,15 @@ actor_critic = ActorCritic(env, sess)
 
 # action = actor_critic.actor_model.predict(new_state)
 
+# step_action = np.amax(action, axis=0)  
+
 # # print(result_array)
 
 # # action = np.amax(result_array, axis=0)  # np.argmax(result_array[0][0])  #  actor_critic.actor_model.predict(new_state)
+# print(step_action)
 
-
-# print(action)
+# new_state, reward, done, summary_stat = env.step([step_action])
+# print("New Reward: ", reward)
 
 
 
@@ -299,18 +320,34 @@ for trial in range(trials):
         #     action = [1, 0]
         #     # print("1 action: ", action)
 
-        new_state, reward, done, summary_stat = env.step([action])
+        # if action.shape[0] > 2:
+        #     step_action = np.amax(action, axis=0)  
+        # else:
+        #     step_action = action
+
+
+        new_state, reward, done, summary_stat = env.step(action)
         new_state = new_state.reshape(new_state[0].shape)
         # print("Step reward: ", reward)
 
         reward = reward*10 if not done else -10 # TODO - Need to adjust this for better training / Maybe using other algorithm may help
         
-        # env.render(title="MSFT")
+        # TODO - Need to modify the enviroment to generatte continuous rewards
+        rewards = []
+        for i in range(10):
+            rewards.append(random.uniform((int(reward) - 10),(int(reward) + 10)))
+        
+        env.render(title="MSFT")
         # new_state =list(new_state.items())[0][1]
         # new_state= np.reshape(new_state, (30,4,1))
 
         # For training
-        actor_critic.remember(cur_state, action, reward, new_state, done)
+        # if  action.shape[0] > 2:
+        actor_critic.remember(cur_state, action, np.array(rewards), new_state, done)
+        # else:
+        #     actor_critic.remember(cur_state, np.array([action]), reward, new_state, done)
+
+
         actor_critic.train()
         actor_critic.update_target() # iterates target model
 
