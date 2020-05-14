@@ -4,7 +4,7 @@ Still under construction....
 
 Sample results:
 
-Semi-continuous DQN (with LSTM) Agent navigating the 2008 financial crisis 
+Semi-continuous DQN ( V1 with LSTM) Agent navigating the 2008 financial crisis 
 
 ![Early stage in 2007](https://github.com/heng2j/RL-Trade/blob/master/for_readme/RL-Trade-Result_Late.gif?raw=true)
 
