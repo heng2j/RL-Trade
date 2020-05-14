@@ -47,7 +47,7 @@ class ActorCritic:
         self.sess = sess
 
         self.learning_rate = 0.001
-        self.epsilon = 1.0
+        self.epsilon = 1
         self.epsilon_decay = .9995
         self.gamma = .95
         self.tau = .125
@@ -259,49 +259,8 @@ export_summary_stat_path = './run_summary/UDR_base_line_A2C_V1_run_summary.csv'
 # The algorithms require a vectorized environment to run
 env = DummyVecEnv([lambda: StockTradingEnv(df, render_mode='None', filename=filename, export_summary_stat_path=export_summary_stat_path, replay_size=replay_size,trial_len=trial_len, Domain_Randomization_Interval=Domain_Randomization_Interval) ])
 
-obs = env.reset()
-
-
-print("obs shape!!!!!!: ", obs.shape)
-
-# print(obs)
-
-
 sess = tf.compat.v1.Session()
 actor_critic = ActorCritic(env, sess)
-
-cur_state = env.reset()
-
-print("cur_state shape!!!!!!: ", cur_state.shape)
-
-
-print("cur_state[0] shape!!!!!!: ", cur_state[0].shape)
-
-new_state = cur_state.reshape(cur_state[0].shape)
-print("new_state shape", new_state.shape)
-
-print ( np.array_equal(cur_state[0],new_state ))
-
-# if cur_state[0] is new_state:
-#     print('True')
-# else:
-#     print("False")
-#     print("cur_state[0]: \n", cur_state[0])
-#     print("new_state: \n", new_state)
-
-
-# action = actor_critic.actor_model.predict(new_state)
-
-# step_action = np.amax(action, axis=0)  
-
-# # print(result_array)
-
-# # action = np.amax(result_array, axis=0)  # np.argmax(result_array[0][0])  #  actor_critic.actor_model.predict(new_state)
-# print(step_action)
-
-# new_state, reward, done, summary_stat = env.step([step_action])
-# print("New Reward: ", reward)
-
 
 
 
@@ -312,20 +271,6 @@ for trial in range(trials):
     
     for step in range(trial_len):
         action = actor_critic.act(cur_state)
-        # print("Outter action: ", action)
-        # print(type(action))
-        # TODO - Not sure why will return scalar 0 or 1
-        # if action is 0:
-        #     action = [0, 0]
-        #     # print("0 action: ", action)
-        # elif action is 1:
-        #     action = [1, 0]
-        #     # print("1 action: ", action)
-
-        # if action.shape[0] > 2:
-        #     step_action = np.amax(action, axis=0)  
-        # else:
-        #     step_action = action
 
 
         new_state, reward, done, summary_stat = env.step(action)
@@ -340,11 +285,7 @@ for trial in range(trials):
             rewards.append(random.uniform((int(reward) - 10),(int(reward) + 10)))
         
         env.render(title="MSFT")
-        # new_state =list(new_state.items())[0][1]
-        # new_state= np.reshape(new_state, (30,4,1))
 
-        # For training
-        # if  action.shape[0] > 2:
         actor_critic.remember(cur_state, action, np.array(rewards), new_state, done)
         # else:
         #     actor_critic.remember(cur_state, np.array([action]), reward, new_state, done)
@@ -367,17 +308,11 @@ columns = ['step', 'date', 'balance', 'shares_held', 'total_shares_sold',
             'cur_reward', 'cur_action', 'profit'
             ]
 
-# print("summary_stat: ", summary_stat[0])
 df = pd.DataFrame(summary_stat[0],columns=columns)
 df.to_csv(export_summary_stat_path)
-
-# dqn_agent.render_all_modes(env)
-#model_code = 'baseline_LSTM_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
 
 # model_code = 'baseline_A2C_V1_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
 model_code = 'UDR_baseline_A2C_V1_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
 
-actor_critic.save_model("./models/model_{}.model".format(model_code))
-        
-
+actor_critic.actor_model.save_weights("./models/model_{}.h5".format(model_code))
 

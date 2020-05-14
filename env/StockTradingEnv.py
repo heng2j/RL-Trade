@@ -282,7 +282,7 @@ class StockTradingEnv(gym.Env):
         self.trades = []
 
         if self.Domain_Randomization_Interval != None:
-            print("Do Unifrom Domain Randomization!!!")
+            # print("Do Unifrom Domain Randomization!!!")
             rand_step = random.randint(0, len(self.df))
             if (rand_step + self.Domain_Randomization_Interval) > len(self.df):
                 self.current_step = rand_step - ((rand_step + self.Domain_Randomization_Interval) - len(self.df))
