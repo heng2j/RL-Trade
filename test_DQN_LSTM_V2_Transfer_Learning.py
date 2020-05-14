@@ -102,7 +102,7 @@ class DQN:
         else:
             predict = self.model.predict(state)
             result = np.argmax(predict[0])
-            print("self.model.predict(state): ", predict)
+            # print("self.model.predict(state): ", predict)
             if result == 0:
                 return [0, 0]
             elif result == 1:
@@ -182,13 +182,16 @@ model_path =  './models/model_UDR_baseline_LSTM_V2_Transfer_Learning_5_iteration
 
 # df = pd.read_csv('./data/MSFT.csv')
 df = pd.read_csv('./data/AAPL_sub_Financial_Crisis.csv')
+# df = pd.read_csv('./data/MSFT_sub_COVID_Crisis.csv')
 
 df = df.sort_values('Date')
 
 
 # export_summary_stat_path = './run_summary/base_line_A2C_V1_run_summary.csv'
 # export_summary_stat_path = './run_summary/Test_baseline_LSTM_V2_run_summary.csv'
-export_summary_stat_path = './run_summary/Test_UDR_baseline_LSTM_V2_Transfer_Learning_run_summary_t3.csv'
+export_summary_stat_path = './run_summary/Test_UDR_baseline_LSTM_V2_Transfer_Learning_run_summary_t4.csv'
+# export_summary_stat_path = './run_summary/Test_UDR_baseline_LSTM_V2_Transfer_Learning_MSFT_COVID_run_summary_t3.csv'
+
 
 
 
@@ -209,6 +212,7 @@ dqn_agent.model= load_model(model_path)
 obs = obs = env.reset()
 
 for _ in range(len(df)):
+# for _ in range(3):
 
     action = dqn_agent.act(obs)
     # print("Outer action: ", action)
@@ -220,7 +224,8 @@ for _ in range(len(df)):
         action = [1, 0]
         print("1 action: ", action)
     obs, rewards, done, summary_stat = env.step([action])
-    env.render(title="MSFT-2008 Financial_Crisis")
+    env.render(title="APPL-2008 Financial_Crisis")
+
 
 
 columns = ['step', 'date', 'balance', 'shares_held', 'total_shares_sold',

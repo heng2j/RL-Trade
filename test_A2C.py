@@ -243,7 +243,8 @@ class ActorCritic:
               
 
 # Set Testing Data
-df = pd.read_csv('./data/MSFT_sub_Financial_Crisis.csv')
+# df = pd.read_csv('./data/MSFT_sub_Financial_Crisis.csv')
+df = pd.read_csv('./data/MSFT_sub_COVID_Crisis.csv')
 df = df.sort_values('Date')
 
 replay_size = 10
@@ -256,7 +257,7 @@ filename = 'UDR_base_line_A2C_V1_render.txt'
 
 
 # export_summary_stat_path = './run_summary/base_line_A2C_V1_run_summary.csv'
-export_summary_stat_path = './run_summary/Test_UDR_base_line_A2C_V1_run_summary.csv'
+export_summary_stat_path = './run_summary/Test_UDR_base_line_A2C_V1_COVID_run_summary.csv'
 
 # The algorithms require a vectorized environment to run
 env = DummyVecEnv([lambda: StockTradingEnv(df, render_mode='None', filename=filename, export_summary_stat_path=export_summary_stat_path, replay_size=replay_size,trial_len=trial_len, Domain_Randomization_Interval=Domain_Randomization_Interval) ])
