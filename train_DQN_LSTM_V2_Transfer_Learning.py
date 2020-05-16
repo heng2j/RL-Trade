@@ -216,61 +216,58 @@ dqn_agent = DQN(env=env, inputshape=obs.shape[1:])
 model_path = './models/model_UDR_baseline_LSTM_V2_5_iterations_200_steps_each.model'
 dqn_agent.model= load_model(model_path)
 
-print(dqn_agent.model.summary())
-
-# cur_state = obs = env.reset()
 
 
-# for trial in range(trials): 
+for trial in range(trials): 
 
     
-#     cur_state = obs = env.reset()
+    cur_state = obs = env.reset()
     
-#     for step in range(trial_len):
-#         action = dqn_agent.act(cur_state)
-#         # print("Outter action: ", action)
-#         # print(type(action))
-#         # TODO - Not sure why will return scalar 0 or 1
-#         if action is 0:
-#             action = [0, 0]
-#             # print("0 action: ", action)
-#         elif action is 1:
-#             action = [1, 0]
-#             # print("1 action: ", action)
+    for step in range(trial_len):
+        action = dqn_agent.act(cur_state)
+        # print("Outter action: ", action)
+        # print(type(action))
+        # TODO - Not sure why will return scalar 0 or 1
+        if action is 0:
+            action = [0, 0]
+            # print("0 action: ", action)
+        elif action is 1:
+            action = [1, 0]
+            # print("1 action: ", action)
 
-#         new_state, reward, done, summary_stat = env.step([action])
-#         # print("Step reward: ", reward)
+        new_state, reward, done, summary_stat = env.step([action])
+        # print("Step reward: ", reward)
 
-#         reward = reward*10 if not done else -10 # TODO - Need to adjust this for better training / Maybe using other algorithm may help
+        reward = reward*10 if not done else -10 # TODO - Need to adjust this for better training / Maybe using other algorithm may help
         
-#         env.render(title="MSFT")
-#         # new_state =list(new_state.items())[0][1]
-#         # new_state= np.reshape(new_state, (30,4,1))
+        env.render(title="MSFT")
+        # new_state =list(new_state.items())[0][1]
+        # new_state= np.reshape(new_state, (30,4,1))
 
-#         # For training
-#         dqn_agent.remember(cur_state, action, reward, new_state, done)
-#         dqn_agent.replay()  
-#         dqn_agent.target_train() # iterates target model
+        # For training
+        dqn_agent.remember(cur_state, action, reward, new_state, done)
+        dqn_agent.replay()  
+        dqn_agent.target_train() # iterates target model
 
-#         cur_state = new_state
-#         if done:
-#             break
+        cur_state = new_state
+        if done:
+            break
 
-#     print("Completed trial #{} ".format(trial))
+    print("Completed trial #{} ".format(trial))
 
-# columns = ['step', 'date', 'balance', 'shares_held', 'total_shares_sold',
-#             'cost_basis', 'total_sales_value', 'net_worth', 'max_net_worth',
-#             'cur_reward', 'cur_action', 'profit'
-#             ]
+columns = ['step', 'date', 'balance', 'shares_held', 'total_shares_sold',
+            'cost_basis', 'total_sales_value', 'net_worth', 'max_net_worth',
+            'cur_reward', 'cur_action', 'profit'
+            ]
 
-# # print("summary_stat: ", summary_stat[0])
-# df = pd.DataFrame(summary_stat[0],columns=columns)
-# df.to_csv(export_summary_stat_path)
+# print("summary_stat: ", summary_stat[0])
+df = pd.DataFrame(summary_stat[0],columns=columns)
+df.to_csv(export_summary_stat_path)
 
-# # dqn_agent.render_all_modes(env)
-# #model_code = 'baseline_LSTM_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
-# # model_code = 'baseline_LSTM_V2_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
-# model_code = 'UDR_baseline_LSTM_V2_Transfer_Learning_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
+# dqn_agent.render_all_modes(env)
+#model_code = 'baseline_LSTM_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
+# model_code = 'baseline_LSTM_V2_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
+model_code = 'UDR_baseline_LSTM_V2_Transfer_Learning_{0}_iterations_{1}_steps_each'.format(trials,trial_len)
 
-# dqn_agent.save_model("./models/model_{}.model".format(model_code))
+dqn_agent.save_model("./models/model_{}.model".format(model_code))
         

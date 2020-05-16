@@ -201,7 +201,7 @@ trial_len = 10
 Domain_Randomization_Interval = None
 
 # The algorithms require a vectorized environment to run
-env = DummyVecEnv([lambda: StockTradingEnv(df, render_mode='None',  export_summary_stat_path=export_summary_stat_path, replay_size=replay_size,trial_len=trial_len, Domain_Randomization_Interval=Domain_Randomization_Interval) ])
+env = DummyVecEnv([lambda: StockTradingEnv(df, render_mode='live',  export_summary_stat_path=export_summary_stat_path, replay_size=replay_size,trial_len=trial_len, Domain_Randomization_Interval=Domain_Randomization_Interval) ])
 
 dqn_agent = DQN(env=env)
 dqn_agent.model= load_model(model_path)

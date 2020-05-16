@@ -272,7 +272,6 @@ for trial in range(trials):
     for step in range(trial_len):
         action = actor_critic.act(cur_state)
 
-
         new_state, reward, done, summary_stat = env.step(action)
         new_state = new_state.reshape(new_state[0].shape)
         # print("Step reward: ", reward)

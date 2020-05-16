@@ -48,7 +48,7 @@ class ActorCritic:
         self.sess = sess
 
         self.learning_rate = 0.001
-        self.epsilon = 1.0
+        self.epsilon = 0.5
         self.epsilon_decay = .9995
         self.gamma = .95
         self.tau = .125
@@ -243,8 +243,8 @@ class ActorCritic:
               
 
 # Set Testing Data
-# df = pd.read_csv('./data/MSFT_sub_Financial_Crisis.csv')
-df = pd.read_csv('./data/MSFT_sub_COVID_Crisis.csv')
+df = pd.read_csv('./data/MSFT_sub_Financial_Crisis.csv')
+# df = pd.read_csv('./data/MSFT_sub_COVID_Crisis.csv')
 df = df.sort_values('Date')
 
 replay_size = 10
@@ -257,7 +257,7 @@ filename = 'UDR_base_line_A2C_V1_render.txt'
 
 
 # export_summary_stat_path = './run_summary/base_line_A2C_V1_run_summary.csv'
-export_summary_stat_path = './run_summary/Test_UDR_base_line_A2C_V1_COVID_run_summary.csv'
+export_summary_stat_path = './run_summary/Test_UDR_base_line_A2C_V1_08_Financial_Crisis_run_summary_T3.csv'
 
 # The algorithms require a vectorized environment to run
 env = DummyVecEnv([lambda: StockTradingEnv(df, render_mode='None', filename=filename, export_summary_stat_path=export_summary_stat_path, replay_size=replay_size,trial_len=trial_len, Domain_Randomization_Interval=Domain_Randomization_Interval) ])
@@ -270,17 +270,17 @@ actor_critic = ActorCritic(env, sess)
 actor_critic.actor_model.load_weights('./models/model_UDR_baseline_A2C_V1_10_iterations_300_steps_each.h5')
 
 
+cur_state = env.reset()
+cur_state = cur_state.reshape(cur_state[0].shape)
 
 for trial in range(len(df)): 
 
-    cur_state = env.reset()
-    cur_state = cur_state.reshape(cur_state[0].shape)
-    
     action = actor_critic.act(cur_state)
 
     new_state, reward, done, summary_stat = env.step(action)
     new_state = new_state.reshape(new_state[0].shape)
     # print("Step reward: ", reward)
+    # print("summary_stat: ", summary_stat)
 
     reward = reward*10 if not done else -10 # TODO - Need to adjust this for better training / Maybe using other algorithm may help
     
@@ -299,10 +299,6 @@ for trial in range(len(df)):
     cur_state = new_state
     if done:
         break
-
-print("Completed trial #{} ".format(trial))
-actor_critic.epsilon = 1.0 - (trial * 0.1)
-print("Reset Agent's epsilon to:  ", actor_critic.epsilon)
 
 columns = ['step', 'date', 'balance', 'shares_held', 'total_shares_sold',
             'cost_basis', 'total_sales_value', 'net_worth', 'max_net_worth',
